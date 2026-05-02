@@ -7,12 +7,12 @@
 <style>
 body {
   margin: 0;
-  font-family: Arial;
-  background: linear-gradient(135deg,#4facfe,#00f2fe);
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#1e3c72,#2a5298);
   color: white;
 }
 
-/* HEADER (KIRI ATAS) */
+/* HEADER */
 .header {
   position: absolute;
   top: 10px;
@@ -20,32 +20,53 @@ body {
 }
 
 .header p {
-  margin: 5px 0;
+  margin: 5px;
 }
 
-/* KONTEN UTAMA */
+/* LAYOUT */
 .main {
   display: flex;
   justify-content: space-between;
   padding: 80px 20px;
 }
 
-/* AREA GAME */
+/* GAME */
 .game {
   width: 60%;
+}
+
+#question {
+  font-size: 22px;
+  margin-bottom: 15px;
 }
 
 #answers button {
   display: block;
   width: 100%;
-  padding: 10px;
-  margin: 5px 0;
+  padding: 12px;
+  margin: 8px 0;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  background: #ffffff20;
+  color: white;
+  transition: 0.3s;
 }
 
-/* SIDEBAR KANAN */
+#answers button:hover {
+  background: #ffffff40;
+}
+
+/* BENAR / SALAH */
+.correct {
+  background: #00c853 !important;
+}
+
+.wrong {
+  background: #d50000 !important;
+}
+
+/* SIDEBAR */
 .sidebar {
   width: 35%;
 }
@@ -56,28 +77,49 @@ body {
   margin-bottom: 20px;
   border-radius: 10px;
 }
+
+/* PROGRESS BAR */
+.progress {
+  width: 100%;
+  height: 10px;
+  background: #ffffff30;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  height: 10px;
+  width: 100%;
+  background: lime;
+  border-radius: 10px;
+  transition: width 1s linear;
+}
 </style>
 </head>
 
 <body>
 
-<!-- 👤 PLAYER INFO (KIRI ATAS) -->
+<!-- 👤 INFO -->
 <div class="header">
   <p>👤 <span id="playerName"></span></p>
   <p>⭐ Skor: <span id="score">0</span></p>
+  <p>📊 Soal: <span id="progressText">1</span></p>
 </div>
 
 <div class="main">
 
   <!-- 🎮 GAME -->
   <div class="game">
+    <div class="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
     <h2 id="question"></h2>
     <div id="answers"></div>
   </div>
 
-  <!-- 📊 KANAN -->
+  <!-- 📊 SIDEBAR -->
   <div class="sidebar">
-
     <div class="box">
       <h3>🏆 Leaderboard</h3>
       <ul id="leaderboard"></ul>
@@ -87,71 +129,94 @@ body {
       <h3>👥 Player Online</h3>
       <ul id="players"></ul>
     </div>
-
   </div>
 
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="questions.js"></script>
 
 <script>
 let socket = io();
 
 // ambil nama
 let user = localStorage.getItem("username");
+if (!user) window.location.href = "login.html";
 
-// kalau belum login
-if (!user) {
-  window.location.href = "login.html";
-}
-
-// tampilkan nama
 document.getElementById("playerName").innerText = user;
-
 socket.emit("join", user);
 
-let score = 0;
-let questions = [];
 let index = 0;
+let score = 0;
+let time = 10;
+let timer;
 
 // LOAD SOAL
-async function loadQuestions() {
-  const res = await fetch("/questions");
-  questions = await res.json();
-  showQuestion();
-}
-
-// TAMPILKAN SOAL
 function showQuestion() {
-  let q = questions[index];
-  document.getElementById("question").innerHTML = q.question;
+  clearInterval(timer);
+  time = 10;
 
-  let answers = [...q.incorrect_answers, q.correct_answer]
-    .sort(() => Math.random() - 0.5);
+  document.getElementById("progressText").innerText =
+    (index + 1) + "/" + questions.length;
+
+  let q = questions[index];
+  document.getElementById("question").innerText = q.question;
 
   let container = document.getElementById("answers");
   container.innerHTML = "";
 
-  answers.forEach(ans => {
-    let btn = document.createElement("button");
-    btn.innerHTML = ans;
+  q.answers
+    .sort(() => Math.random() - 0.5)
+    .forEach(ans => {
+      let btn = document.createElement("button");
+      btn.innerText = ans;
 
-    btn.onclick = () => {
-      if (ans === q.correct_answer) {
-        score++;
-        document.getElementById("score").innerText = score;
-      }
+      btn.onclick = () => selectAnswer(btn, ans === q.correct);
+      container.appendChild(btn);
+    });
 
-      index++;
-      if (index < questions.length) {
-        showQuestion();
-      } else {
-        finishGame();
-      }
-    };
+  startTimer();
+}
 
-    container.appendChild(btn);
-  });
+// TIMER
+function startTimer() {
+  let bar = document.getElementById("progressBar");
+  bar.style.width = "100%";
+
+  timer = setInterval(() => {
+    time--;
+    bar.style.width = (time * 10) + "%";
+
+    if (time <= 0) {
+      clearInterval(timer);
+      next();
+    }
+  }, 1000);
+}
+
+// PILIH JAWABAN
+function selectAnswer(button, correct) {
+  clearInterval(timer);
+
+  if (correct) {
+    button.classList.add("correct");
+    score++;
+    document.getElementById("score").innerText = score;
+  } else {
+    button.classList.add("wrong");
+  }
+
+  setTimeout(next, 800);
+}
+
+// NEXT
+function next() {
+  index++;
+  if (index < questions.length) {
+    showQuestion();
+  } else {
+    finishGame();
+  }
 }
 
 // SELESAI
@@ -165,7 +230,7 @@ async function finishGame() {
     })
   });
 
-  alert("Game selesai! Skor: " + score);
+  alert("🎉 Selesai! Skor: " + score);
   loadLeaderboard();
 }
 
@@ -197,7 +262,7 @@ socket.on("players", (players) => {
 });
 
 // START
-loadQuestions();
+showQuestion();
 loadLeaderboard();
 </script>
 
