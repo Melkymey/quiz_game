@@ -8,25 +8,78 @@
 body {
   margin: 0;
   height: 100vh;
+  background: linear-gradient(135deg,#fddb3a,#f4c430);
   display: flex;
   justify-content: center;
   align-items: center;
-  background: black;
-  color: white;
-  font-family: Arial;
+  font-family: 'Segoe UI', sans-serif;
+  overflow: hidden;
 }
 
+/* CONTAINER */
+.container {
+  text-align: center;
+}
+
+/* LOGO BUBBLE */
 .logo {
+  background: white;
+  padding: 40px 60px;
+  border-radius: 50px;
   font-size: 40px;
-  opacity: 0;
-  transform: scale(0.5);
-  animation: muncul 2s ease forwards;
+  font-weight: bold;
+  color: #333;
+  display: inline-block;
+  transform: scale(0);
+  animation: pop 1s ease forwards;
 }
 
-@keyframes muncul {
+/* TEXT */
+.tagline {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #333;
+  opacity: 0;
+  animation: fade 1s ease forwards;
+  animation-delay: 1s;
+}
+
+/* LOADING */
+.loading {
+  margin-top: 20px;
+  height: 6px;
+  width: 200px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bar {
+  height: 100%;
+  width: 0%;
+  background: #333;
+  animation: load 2s linear forwards;
+  animation-delay: 1.5s;
+}
+
+/* ANIMATIONS */
+@keyframes pop {
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes fade {
   to {
     opacity: 1;
-    transform: scale(1);
+  }
+}
+
+@keyframes load {
+  to {
+    width: 100%;
   }
 }
 </style>
@@ -34,12 +87,20 @@ body {
 
 <body>
 
-<div class="logo">🧠 Quiz Game</div>
+<div class="container">
+  <div class="logo">QUIZ</div>
+  <div class="tagline">Asah Otakmu 🚀</div>
+
+  <div class="loading">
+    <div class="bar"></div>
+  </div>
+</div>
 
 <script>
+// pindah ke menu setelah animasi selesai
 setTimeout(() => {
-  window.location.href = "login.html";
-}, 3000);
+  window.location.href = "menu.html";
+}, 3500);
 </script>
 
 </body>
