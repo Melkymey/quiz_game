@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Online 🧠</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: linear-gradient(135deg,#4facfe,#00f2fe);
+  color: white;
+}
+
+.container {
+  background: rgba(0,0,0,0.6);
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 50px;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#answers button {
+  display: block;
+  width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Login</h2>
+<input id="username" placeholder="Nama kamu">
+<button onclick="login()">Masuk</button>
+
+<div id="game" style="display:none;">
+  <h3 id="question"></h3>
+  <div id="answers"></div>
+  <p>Skor: <span id="score">0</span></p>
+</div>
+
+<h2>🏆 Leaderboard</h2>
+<ul id="leaderboard"></ul>
+
+<h2>👥 Player Online</h2>
+<ul id="players"></ul>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+let socket = io();
+
+let user;
+let score = 0;
+let questions = [];
+let index = 0;
+
+// LOGIN
+async function login() {
+  const username = document.getElementById("username").value;
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username })
+  });
+
+  user = await res.json();
+  socket.emit("join", user.username);
+
+  document.getElementById("game").style.display = "block";
+
+  loadQuestions();
+  loadLeaderboard();
+}
+
+// LOAD SOAL
+async function loadQuestions() {
+  const res = await fetch("/questions");
+  questions = await res.json();
+  showQuestion();
+}
+
+// TAMPILKAN SOAL
+function showQuestion() {
+  let q = questions[index];
+  document.getElementById("question").innerHTML = q.question;
+
+  let answers = [...q.incorrect_answers, q.correct_answer]
+    .sort(() => Math.random() - 0.5);
+
+  let container = document.getElementById("answers");
+  container.innerHTML = "";
+
+  answers.forEach(ans => {
+    let btn = document.createElement("button");
+    btn.innerHTML = ans;
+
+    btn.onclick = () => {
+      if (ans === q.correct_answer) {
+        score++;
+        document.getElementById("score").innerText = score;
+      }
+
+      index++;
+      if (index < questions.length) {
+        showQuestion();
+      } else {
+        finishGame();
+      }
+    };
+
+    container.appendChild(btn);
+  });
+}
+
+// SELESAI GAME
+async function finishGame() {
+  await fetch("/score", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      username: user.username,
+      score
+    })
+  });
+
+  alert("Game selesai! Skor: " + score);
+
+  loadLeaderboard();
+}
+
+// LEADERBOARD
+async function loadLeaderboard() {
+  const res = await fetch("/leaderboard");
+  const data = await res.json();
+
+  let list = document.getElementById("leaderboard");
+  list.innerHTML = "";
+
+  data.forEach(p => {
+    let li = document.createElement("li");
+    li.innerText = p.username + " - " + p.score;
+    list.appendChild(li);
+  });
+}
+
+// PLAYER ONLINE
+socket.on("players", (players) => {
+  let list = document.getElementById("players");
+  list.innerHTML = "";
+
+  players.forEach(p => {
+    let li = document.createElement("li");
+    li.innerText = p.username;
+    list.appendChild(li);
+  });
+});
+</script>
+
+</body>
+  </html>
