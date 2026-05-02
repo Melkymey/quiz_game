@@ -1,53 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
+
 <link rel="stylesheet" href="kunci.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <style>
-body{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  background:#2575fc;
-  color:white;
-  font-family:Arial;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#6a11cb,#2575fc);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: white;
 }
 
-.box{width:300px;text-align:center}
-button{display:block;margin:5px;padding:10px;width:100%}
-.correct{background:green}
-.wrong{background:red}
+.container {
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.score, .lives {
+  background: rgba(255,255,255,0.2);
+  padding: 5px 10px;
+  border-radius: 10px;
+}
+
+.card {
+  background: white;
+  color: #333;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.answers {
+  margin-top: 20px;
+}
+
+.answers button {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 20px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  background: white;
+}
+
+.correct { background: green; color: white; }
+.wrong { background: red; color: white; }
 </style>
 </head>
 
 <body>
 
-<div class="box">
-<p>⭐ <span id="score">0</span></p>
-<p>❤️ <span id="life">3</span></p>
-<h3 id="q"></h3>
-<div id="a"></div>
+<div class="container">
+
+  <div class="top">
+    <div class="score">⭐ <span id="score">0</span></div>
+    <div class="lives">❤️ <span id="life">3</span></div>
+  </div>
+
+  <div class="card">
+    <h3 id="q"></h3>
+  </div>
+
+  <div class="answers" id="a"></div>
+
 </div>
 
 <script src="questions.js"></script>
 
 <script>
-let user=localStorage.getItem("username");
-if(!user)location.href="menu.html";
+let user = localStorage.getItem("username");
+if (!user) location.href = "menu.html";
 
 let qlist=[],i=0,score=0,life=3;
 
-// load hybrid
 async function load(){
   try{
     let r=await fetch("/questions");
     let d=await r.json();
     qlist = d.length?d:window.questions;
   }catch{
-    qlist=window.questions;
+    qlist = window.questions;
   }
   show();
 }
@@ -55,11 +103,14 @@ async function load(){
 function show(){
   let q=qlist[i];
   document.getElementById("q").innerText=q.question;
+
   let a=document.getElementById("a");
   a.innerHTML="";
+
   q.answers.forEach(ans=>{
     let b=document.createElement("button");
     b.innerText=ans;
+
     b.onclick=()=>{
       if(ans==q.correct){
         score++;
@@ -72,6 +123,7 @@ function show(){
       }
       setTimeout(next,500);
     };
+
     a.appendChild(b);
   });
 }
@@ -88,7 +140,12 @@ function next(){
 }
 
 async function finish(){
-  await fetch("/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:user,score})});
+  await fetch("/score",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username:user,score})
+  });
+
   alert("Skor: "+score);
   location.href="menu.html";
 }
