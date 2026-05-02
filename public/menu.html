@@ -2,6 +2,11 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+
+<!-- LOCK -->
+<link rel="stylesheet" href="kunci.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <title>Quiz Game</title>
 
 <style>
@@ -23,9 +28,8 @@ body {
 /* LOGO */
 .logo {
   background: white;
-  padding: 40px;
+  padding: 40px 60px;
   border-radius: 50px;
-  display: inline-block;
   font-size: 40px;
   font-weight: bold;
   margin-bottom: 30px;
@@ -33,9 +37,9 @@ body {
 
 /* INPUT */
 input {
-  width: 220px;
-  padding: 10px;
-  border-radius: 10px;
+  width: 240px;
+  padding: 12px;
+  border-radius: 12px;
   border: none;
   margin-bottom: 15px;
   text-align: center;
@@ -45,7 +49,7 @@ input {
 /* BUTTON */
 button {
   display: block;
-  width: 240px;
+  width: 260px;
   padding: 12px;
   margin: 10px auto;
   border-radius: 15px;
@@ -103,7 +107,7 @@ button:hover {
 
 </div>
 
-<!-- MODAL -->
+<!-- MODAL LEADERBOARD -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <h3>🏆 Top Global</h3>
@@ -114,7 +118,15 @@ button:hover {
 
 <script>
 // ======================
-// PLAY (SAVE USERNAME)
+// AUTO ISI NAMA (BONUS)
+// ======================
+let lastUser = localStorage.getItem("username");
+if (lastUser) {
+  document.getElementById("username").value = lastUser;
+}
+
+// ======================
+// PLAY
 // ======================
 function play() {
   let name = document.getElementById("username").value.trim();
@@ -124,18 +136,15 @@ function play() {
     return;
   }
 
-  // ✅ SIMPAN USERNAME DI SINI
+  // SIMPAN USERNAME
   localStorage.setItem("username", name);
 
-  // pindah ke game
   window.location.href = "index.html";
 }
 
-// tekan ENTER juga bisa
-document.getElementById("username").addEventListener("keypress", function(e) {
-  if (e.key === "Enter") {
-    play();
-  }
+// ENTER = PLAY
+document.getElementById("username").addEventListener("keypress", function(e){
+  if (e.key === "Enter") play();
 });
 
 // ======================
@@ -150,9 +159,9 @@ async function openLeaderboard() {
   let list = document.getElementById("leaderboard");
   list.innerHTML = "";
 
-  data.forEach(p => {
+  data.forEach((p, i) => {
     let li = document.createElement("li");
-    li.innerText = p.username + " - " + p.score;
+    li.innerText = (i+1) + ". " + p.username + " - " + p.score;
     list.appendChild(li);
   });
 }
@@ -160,6 +169,11 @@ async function openLeaderboard() {
 function closeModal() {
   document.getElementById("modal").style.display = "none";
 }
+
+// lock gesture tambahan
+document.addEventListener('gesturestart', function (e) {
+  e.preventDefault();
+});
 </script>
 
 </body>
