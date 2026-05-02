@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios");
+const mongoose = require("mongoose");
 const http = require("http");
 const { Server } = require("socket.io");
 
@@ -12,32 +12,60 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-let scores = [];
-let players = [];
+// 🔗 CONNECT DB
+mongoose.connect("mongodb://127.0.0.1:27017/quizDB")
+  .then(() => console.log("MongoDB Connected"))
+  .catch(() => console.log("MongoDB gagal, pakai fallback"));
 
-// API SOAL
-app.get("/questions", async (req, res) => {
+// 📦 SCHEMA
+const Question = mongoose.model("Question", {
+  question: String,
+  correct: String,
+  answers: [String]
+});
+
+// 📥 TAMBAH SOAL
+app.post("/add-question", async (req, res) => {
   try {
-    const r = await axios.get("https://opentdb.com/api.php?amount=5&type=multiple");
-    res.json(r.data.results);
+    const q = new Question(req.body);
+    await q.save();
+    res.json({ success: true });
   } catch {
-    res.status(500).json({ error: "API error" });
+    res.json({ success: false });
   }
 });
 
-// SIMPAN SCORE
+// 📤 AMBIL SOAL (HYBRID)
+app.get("/questions", async (req, res) => {
+  try {
+    const data = await Question.aggregate([{ $sample: { size: 5 } }]);
+
+    if (data.length > 0) {
+      return res.json(data); // DB
+    } else {
+      return res.json([]); // fallback ke file
+    }
+  } catch {
+    res.json([]);
+  }
+});
+
+// 🏆 LEADERBOARD
+let scores = [];
+
 app.post("/score", (req, res) => {
   scores.push(req.body);
   res.json({ success: true });
 });
 
-// LEADERBOARD
 app.get("/leaderboard", (req, res) => {
   const top = scores.sort((a,b)=>b.score-a.score).slice(0,10);
   res.json(top);
 });
 
-// MULTIPLAYER BASIC
+// 👥 MULTIPLAYER
+let players = [];
+
 io.on("connection", (socket) => {
   socket.on("join", (username) => {
     players.push({ id: socket.id, username });
