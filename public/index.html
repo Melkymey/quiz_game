@@ -1,270 +1,117 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Quiz Game</title>
-
 <style>
-body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg,#1e3c72,#2a5298);
-  color: white;
-}
-
-/* HEADER */
-.header {
-  position: absolute;
-  top: 10px;
-  left: 15px;
-}
-
-.header p {
-  margin: 5px;
-}
-
-/* LAYOUT */
-.main {
-  display: flex;
-  justify-content: space-between;
-  padding: 80px 20px;
-}
-
-/* GAME */
-.game {
-  width: 60%;
-}
-
-#question {
-  font-size: 22px;
-  margin-bottom: 15px;
-}
-
-#answers button {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  background: #ffffff20;
-  color: white;
-  transition: 0.3s;
-}
-
-#answers button:hover {
-  background: #ffffff40;
-}
-
-/* BENAR / SALAH */
-.correct {
-  background: #00c853 !important;
-}
-
-.wrong {
-  background: #d50000 !important;
-}
-
-/* SIDEBAR */
-.sidebar {
-  width: 35%;
-}
-
-.box {
-  background: rgba(0,0,0,0.5);
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-}
-
-/* PROGRESS BAR */
-.progress {
-  width: 100%;
-  height: 10px;
-  background: #ffffff30;
-  border-radius: 10px;
-  margin-bottom: 10px;
-}
-
-.progress-bar {
-  height: 10px;
-  width: 100%;
-  background: lime;
-  border-radius: 10px;
-  transition: width 1s linear;
-}
+body{font-family:Arial;background:#1e3c72;color:white;margin:0}
+.main{display:flex;padding:80px}
+.game{width:60%}
+.sidebar{width:40%}
+button{display:block;margin:5px;padding:10px}
+.correct{background:green}
+.wrong{background:red}
 </style>
 </head>
-
 <body>
 
-<!-- 👤 INFO -->
-<div class="header">
-  <p>👤 <span id="playerName"></span></p>
-  <p>⭐ Skor: <span id="score">0</span></p>
-  <p>📊 Soal: <span id="progressText">1</span></p>
-</div>
+<p>👤 <span id="player"></span></p>
+<p>⭐ <span id="score">0</span></p>
 
 <div class="main">
+<div class="game">
+<h2 id="q"></h2>
+<div id="a"></div>
+</div>
 
-  <!-- 🎮 GAME -->
-  <div class="game">
-    <div class="progress">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-
-    <h2 id="question"></h2>
-    <div id="answers"></div>
-  </div>
-
-  <!-- 📊 SIDEBAR -->
-  <div class="sidebar">
-    <div class="box">
-      <h3>🏆 Leaderboard</h3>
-      <ul id="leaderboard"></ul>
-    </div>
-
-    <div class="box">
-      <h3>👥 Player Online</h3>
-      <ul id="players"></ul>
-    </div>
-  </div>
-
+<div class="sidebar">
+<h3>🏆</h3>
+<ul id="lb"></ul>
+<h3>👥</h3>
+<ul id="pl"></ul>
+</div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="questions.js"></script>
 
 <script>
-let socket = io();
+let socket=io();
+let user=localStorage.getItem("username");
+if(!user)location.href="login.html";
+document.getElementById("player").innerText=user;
+socket.emit("join",user);
 
-// ambil nama
-let user = localStorage.getItem("username");
-if (!user) window.location.href = "login.html";
+let questions=[];
+let i=0,s=0;
 
-document.getElementById("playerName").innerText = user;
-socket.emit("join", user);
-
-let index = 0;
-let score = 0;
-let time = 10;
-let timer;
-
-// LOAD SOAL
-function showQuestion() {
-  clearInterval(timer);
-  time = 10;
-
-  document.getElementById("progressText").innerText =
-    (index + 1) + "/" + questions.length;
-
-  let q = questions[index];
-  document.getElementById("question").innerText = q.question;
-
-  let container = document.getElementById("answers");
-  container.innerHTML = "";
-
-  q.answers
-    .sort(() => Math.random() - 0.5)
-    .forEach(ans => {
-      let btn = document.createElement("button");
-      btn.innerText = ans;
-
-      btn.onclick = () => selectAnswer(btn, ans === q.correct);
-      container.appendChild(btn);
-    });
-
-  startTimer();
-}
-
-// TIMER
-function startTimer() {
-  let bar = document.getElementById("progressBar");
-  bar.style.width = "100%";
-
-  timer = setInterval(() => {
-    time--;
-    bar.style.width = (time * 10) + "%";
-
-    if (time <= 0) {
-      clearInterval(timer);
-      next();
-    }
-  }, 1000);
-}
-
-// PILIH JAWABAN
-function selectAnswer(button, correct) {
-  clearInterval(timer);
-
-  if (correct) {
-    button.classList.add("correct");
-    score++;
-    document.getElementById("score").innerText = score;
-  } else {
-    button.classList.add("wrong");
+// LOAD HYBRID
+async function loadQ(){
+  try{
+    let r=await fetch("/questions");
+    let d=await r.json();
+    questions = d.length? d : window.questions;
+  }catch{
+    questions = window.questions;
   }
-
-  setTimeout(next, 800);
+  show();
 }
 
-// NEXT
-function next() {
-  index++;
-  if (index < questions.length) {
-    showQuestion();
-  } else {
-    finishGame();
-  }
-}
-
-// SELESAI
-async function finishGame() {
-  await fetch("/score", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      username: user,
-      score
-    })
-  });
-
-  alert("🎉 Selesai! Skor: " + score);
-  loadLeaderboard();
-}
-
-// LEADERBOARD
-async function loadLeaderboard() {
-  const res = await fetch("/leaderboard");
-  const data = await res.json();
-
-  let list = document.getElementById("leaderboard");
-  list.innerHTML = "";
-
-  data.forEach(p => {
-    let li = document.createElement("li");
-    li.innerText = p.username + " - " + p.score;
-    list.appendChild(li);
+function show(){
+  let q=questions[i];
+  document.getElementById("q").innerText=q.question;
+  let a=document.getElementById("a");
+  a.innerHTML="";
+  q.answers.forEach(ans=>{
+    let b=document.createElement("button");
+    b.innerText=ans;
+    b.onclick=()=>{
+      if(ans==q.correct){
+        s++;
+        document.getElementById("score").innerText=s;
+        b.classList.add("correct");
+      }else b.classList.add("wrong");
+      setTimeout(next,500);
+    };
+    a.appendChild(b);
   });
 }
 
-// PLAYER ONLINE
-socket.on("players", (players) => {
-  let list = document.getElementById("players");
-  list.innerHTML = "";
+function next(){
+  i++;
+  if(i<questions.length)show();
+  else finish();
+}
 
-  players.forEach(p => {
-    let li = document.createElement("li");
-    li.innerText = p.username;
-    list.appendChild(li);
+async function finish(){
+  await fetch("/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:user,score:s})});
+  alert("Skor: "+s);
+  loadLB();
+}
+
+async function loadLB(){
+  let r=await fetch("/leaderboard");
+  let d=await r.json();
+  let lb=document.getElementById("lb");
+  lb.innerHTML="";
+  d.forEach(x=>{
+    let li=document.createElement("li");
+    li.innerText=x.username+"-"+x.score;
+    lb.appendChild(li);
+  });
+}
+
+socket.on("players",p=>{
+  let pl=document.getElementById("pl");
+  pl.innerHTML="";
+  p.forEach(x=>{
+    let li=document.createElement("li");
+    li.innerText=x.username;
+    pl.appendChild(li);
   });
 });
 
-// START
-showQuestion();
-loadLeaderboard();
+loadQ();
+loadLB();
 </script>
-
 </body>
 </html>
