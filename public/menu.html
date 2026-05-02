@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Game</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#fddb3a,#f4c430);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* CONTAINER */
+.container {
+  text-align: center;
+}
+
+/* LOGO */
+.logo {
+  background: white;
+  padding: 40px;
+  border-radius: 50px;
+  display: inline-block;
+  font-size: 40px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+/* INPUT */
+input {
+  width: 200px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* BUTTON */
+button {
+  display: block;
+  width: 220px;
+  padding: 12px;
+  margin: 10px auto;
+  border-radius: 15px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  background: white;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* MODAL LEADERBOARD */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  color: black;
+  padding: 20px;
+  border-radius: 15px;
+  width: 300px;
+  max-height: 400px;
+  overflow: auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- LOGO -->
+  <div class="logo">QUIZ</div>
+
+  <!-- INPUT NAMA -->
+  <input id="username" placeholder="Masukkan nama">
+
+  <!-- PLAY -->
+  <button onclick="play()">▶️ PLAY</button>
+
+  <!-- LEADERBOARD -->
+  <button onclick="openLeaderboard()">🏆 Top Global Ranking</button>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>🏆 Top Global</h3>
+    <ul id="leaderboard"></ul>
+    <button onclick="closeModal()">Tutup</button>
+  </div>
+</div>
+
+<script>
+function play() {
+  let name = document.getElementById("username").value;
+
+  if (!name) {
+    alert("Isi nama dulu!");
+    return;
+  }
+
+  localStorage.setItem("username", name);
+  window.location.href = "index.html";
+}
+
+// OPEN LEADERBOARD
+async function openLeaderboard() {
+  document.getElementById("modal").style.display = "flex";
+
+  let res = await fetch("/leaderboard");
+  let data = await res.json();
+
+  let list = document.getElementById("leaderboard");
+  list.innerHTML = "";
+
+  data.forEach(p => {
+    let li = document.createElement("li");
+    li.innerText = p.username + " - " + p.score;
+    list.appendChild(li);
+  });
+}
+
+// CLOSE
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+</script>
+
+</body>
+</html>
