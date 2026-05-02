@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Game</title>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: black;
+  color: white;
+  font-family: Arial;
+}
+
+.logo {
+  font-size: 40px;
+  opacity: 0;
+  transform: scale(0.5);
+  animation: muncul 2s ease forwards;
+}
+
+@keyframes muncul {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="logo">🧠 Quiz Game</div>
+
+<script>
+setTimeout(() => {
+  window.location.href = "login.html";
+}, 3000);
+</script>
+
+</body>
+</html>
