@@ -33,18 +33,19 @@ body {
 
 /* INPUT */
 input {
-  width: 200px;
+  width: 220px;
   padding: 10px;
   border-radius: 10px;
   border: none;
   margin-bottom: 15px;
   text-align: center;
+  font-size: 16px;
 }
 
 /* BUTTON */
 button {
   display: block;
-  width: 220px;
+  width: 240px;
   padding: 12px;
   margin: 10px auto;
   border-radius: 15px;
@@ -59,7 +60,7 @@ button:hover {
   transform: scale(1.05);
 }
 
-/* MODAL LEADERBOARD */
+/* MODAL */
 .modal {
   position: fixed;
   top: 0;
@@ -91,7 +92,7 @@ button:hover {
   <!-- LOGO -->
   <div class="logo">QUIZ</div>
 
-  <!-- INPUT NAMA -->
+  <!-- INPUT -->
   <input id="username" placeholder="Masukkan nama">
 
   <!-- PLAY -->
@@ -112,19 +113,34 @@ button:hover {
 </div>
 
 <script>
+// ======================
+// PLAY (SAVE USERNAME)
+// ======================
 function play() {
-  let name = document.getElementById("username").value;
+  let name = document.getElementById("username").value.trim();
 
   if (!name) {
     alert("Isi nama dulu!");
     return;
   }
 
+  // ✅ SIMPAN USERNAME DI SINI
   localStorage.setItem("username", name);
+
+  // pindah ke game
   window.location.href = "index.html";
 }
 
-// OPEN LEADERBOARD
+// tekan ENTER juga bisa
+document.getElementById("username").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    play();
+  }
+});
+
+// ======================
+// LEADERBOARD
+// ======================
 async function openLeaderboard() {
   document.getElementById("modal").style.display = "flex";
 
@@ -141,7 +157,6 @@ async function openLeaderboard() {
   });
 }
 
-// CLOSE
 function closeModal() {
   document.getElementById("modal").style.display = "none";
 }
