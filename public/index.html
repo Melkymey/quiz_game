@@ -1,188 +1,99 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Quiz Game</title>
+<link rel="stylesheet" href="kunci.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <style>
-body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg,#6a11cb,#2575fc);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  color: white;
+body{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background:#2575fc;
+  color:white;
+  font-family:Arial;
 }
 
-.container {
-  width: 400px;
-  max-width: 90%;
-  text-align: center;
-}
-
-.top {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-}
-
-.score, .lives, .qnum {
-  background: rgba(255,255,255,0.2);
-  padding: 5px 10px;
-  border-radius: 10px;
-}
-
-.card {
-  background: white;
-  color: #333;
-  padding: 25px;
-  border-radius: 15px;
-  min-height: 120px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-}
-
-.answers {
-  margin-top: 20px;
-}
-
-.answers button {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border-radius: 20px;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  background: white;
-  transition: 0.2s;
-}
-
-.answers button:hover {
-  transform: scale(1.05);
-}
-
-.correct {
-  background: #4caf50 !important;
-  color: white;
-}
-
-.wrong {
-  background: #f44336 !important;
-  color: white;
-}
+.box{width:300px;text-align:center}
+button{display:block;margin:5px;padding:10px;width:100%}
+.correct{background:green}
+.wrong{background:red}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-
-  <div class="top">
-    <div class="score">⭐ <span id="score">0</span></div>
-    <div class="qnum" id="qnum">1</div>
-    <div class="lives" id="lives">❤️❤️❤️</div>
-  </div>
-
-  <div class="card">
-    <h3 id="question"></h3>
-  </div>
-
-  <div class="answers" id="answers"></div>
-
+<div class="box">
+<p>⭐ <span id="score">0</span></p>
+<p>❤️ <span id="life">3</span></p>
+<h3 id="q"></h3>
+<div id="a"></div>
 </div>
 
 <script src="questions.js"></script>
 
 <script>
-// =====================
-// ✅ LOGIN CHECK (FIX)
-// =====================
-let user = localStorage.getItem("username");
+let user=localStorage.getItem("username");
+if(!user)location.href="menu.html";
 
-if (!user) {
-  window.location.href = "menu.html";
-}
+let qlist=[],i=0,score=0,life=3;
 
-// =====================
-// GAME LOGIC
-// =====================
-let index = 0;
-let score = 0;
-let lives = 3;
-
-function updateLives() {
-  document.getElementById("lives").innerText = "❤️".repeat(lives);
-}
-
-function showQuestion() {
-  let q = questions[index];
-
-  document.getElementById("question").innerText = q.question;
-  document.getElementById("qnum").innerText = (index + 1);
-
-  let container = document.getElementById("answers");
-  container.innerHTML = "";
-
-  q.answers
-    .sort(() => Math.random() - 0.5)
-    .forEach(ans => {
-      let btn = document.createElement("button");
-      btn.innerText = ans;
-
-      btn.onclick = () => selectAnswer(btn, ans === q.correct);
-
-      container.appendChild(btn);
-    });
-}
-
-function selectAnswer(button, correct) {
-  if (correct) {
-    score++;
-    document.getElementById("score").innerText = score;
-    button.classList.add("correct");
-  } else {
-    lives--;
-    updateLives();
-    button.classList.add("wrong");
+// load hybrid
+async function load(){
+  try{
+    let r=await fetch("/questions");
+    let d=await r.json();
+    qlist = d.length?d:window.questions;
+  }catch{
+    qlist=window.questions;
   }
-
-  setTimeout(() => {
-    if (lives <= 0) {
-      alert("💀 Game Over! Skor: " + score);
-      location.href = "menu.html";
-    } else {
-      next();
-    }
-  }, 800);
+  show();
 }
 
-function next() {
-  index++;
-  if (index < questions.length) {
-    showQuestion();
-  } else {
-    finishGame();
-  }
-}
-
-async function finishGame() {
-  await fetch("/score", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      username: user,
-      score
-    })
+function show(){
+  let q=qlist[i];
+  document.getElementById("q").innerText=q.question;
+  let a=document.getElementById("a");
+  a.innerHTML="";
+  q.answers.forEach(ans=>{
+    let b=document.createElement("button");
+    b.innerText=ans;
+    b.onclick=()=>{
+      if(ans==q.correct){
+        score++;
+        document.getElementById("score").innerText=score;
+        b.classList.add("correct");
+      }else{
+        life--;
+        document.getElementById("life").innerText=life;
+        b.classList.add("wrong");
+      }
+      setTimeout(next,500);
+    };
+    a.appendChild(b);
   });
-
-  alert("🎉 Selesai! Skor: " + score);
-  location.href = "menu.html";
 }
 
-updateLives();
-showQuestion();
+function next(){
+  i++;
+  if(life<=0){
+    alert("Game Over");
+    location.href="menu.html";
+    return;
+  }
+  if(i<qlist.length)show();
+  else finish();
+}
+
+async function finish(){
+  await fetch("/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:user,score})});
+  alert("Skor: "+score);
+  location.href="menu.html";
+}
+
+load();
 </script>
 
 </body>
