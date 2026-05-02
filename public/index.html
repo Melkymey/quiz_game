@@ -1,117 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
+<title>Quiz Game</title>
+
 <style>
-body{font-family:Arial;background:#1e3c72;color:white;margin:0}
-.main{display:flex;padding:80px}
-.game{width:60%}
-.sidebar{width:40%}
-button{display:block;margin:5px;padding:10px}
-.correct{background:green}
-.wrong{background:red}
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#6a11cb,#2575fc);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: white;
+}
+
+/* CONTAINER */
+.container {
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+}
+
+/* HEADER */
+.top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.score, .lives, .qnum {
+  background: rgba(255,255,255,0.2);
+  padding: 5px 10px;
+  border-radius: 10px;
+}
+
+/* CARD SOAL */
+.card {
+  background: white;
+  color: #333;
+  padding: 25px;
+  border-radius: 15px;
+  min-height: 120px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* JAWABAN */
+.answers {
+  margin-top: 20px;
+}
+
+.answers button {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 20px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  background: white;
+  transition: 0.2s;
+}
+
+.answers button:hover {
+  transform: scale(1.05);
+}
+
+/* EFEK */
+.correct {
+  background: #4caf50 !important;
+  color: white;
+}
+
+.wrong {
+  background: #f44336 !important;
+  color: white;
+}
 </style>
 </head>
+
 <body>
 
-<p>👤 <span id="player"></span></p>
-<p>⭐ <span id="score">0</span></p>
+<div class="container">
 
-<div class="main">
-<div class="game">
-<h2 id="q"></h2>
-<div id="a"></div>
+  <!-- HEADER -->
+  <div class="top">
+    <div class="score">⭐ <span id="score">0</span></div>
+    <div class="qnum" id="qnum">1</div>
+    <div class="lives" id="lives">❤️❤️❤️</div>
+  </div>
+
+  <!-- SOAL -->
+  <div class="card">
+    <h3 id="question"></h3>
+  </div>
+
+  <!-- JAWABAN -->
+  <div class="answers" id="answers"></div>
+
 </div>
 
-<div class="sidebar">
-<h3>🏆</h3>
-<ul id="lb"></ul>
-<h3>👥</h3>
-<ul id="pl"></ul>
-</div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
 <script src="questions.js"></script>
 
 <script>
-let socket=io();
-let user=localStorage.getItem("username");
-if(!user)location.href="login.html";
-document.getElementById("player").innerText=user;
-socket.emit("join",user);
+let user = localStorage.getItem("username");
+if (!user) location.href = "login.html";
 
-let questions=[];
-let i=0,s=0;
+let index = 0;
+let score = 0;
+let lives = 3;
 
-// LOAD HYBRID
-async function loadQ(){
-  try{
-    let r=await fetch("/questions");
-    let d=await r.json();
-    questions = d.length? d : window.questions;
-  }catch{
-    questions = window.questions;
+function updateLives() {
+  document.getElementById("lives").innerText = "❤️".repeat(lives);
+}
+
+function showQuestion() {
+  let q = questions[index];
+
+  document.getElementById("question").innerText = q.question;
+  document.getElementById("qnum").innerText = (index + 1);
+
+  let container = document.getElementById("answers");
+  container.innerHTML = "";
+
+  q.answers
+    .sort(() => Math.random() - 0.5)
+    .forEach(ans => {
+      let btn = document.createElement("button");
+      btn.innerText = ans;
+
+      btn.onclick = () => selectAnswer(btn, ans === q.correct);
+
+      container.appendChild(btn);
+    });
+}
+
+function selectAnswer(button, correct) {
+  if (correct) {
+    score++;
+    document.getElementById("score").innerText = score;
+    button.classList.add("correct");
+  } else {
+    lives--;
+    updateLives();
+    button.classList.add("wrong");
   }
-  show();
+
+  setTimeout(() => {
+    if (lives <= 0) {
+      alert("💀 Game Over! Skor: " + score);
+      location.reload();
+    } else {
+      next();
+    }
+  }, 800);
 }
 
-function show(){
-  let q=questions[i];
-  document.getElementById("q").innerText=q.question;
-  let a=document.getElementById("a");
-  a.innerHTML="";
-  q.answers.forEach(ans=>{
-    let b=document.createElement("button");
-    b.innerText=ans;
-    b.onclick=()=>{
-      if(ans==q.correct){
-        s++;
-        document.getElementById("score").innerText=s;
-        b.classList.add("correct");
-      }else b.classList.add("wrong");
-      setTimeout(next,500);
-    };
-    a.appendChild(b);
-  });
+function next() {
+  index++;
+  if (index < questions.length) {
+    showQuestion();
+  } else {
+    alert("🎉 Selesai! Skor: " + score);
+    location.reload();
+  }
 }
 
-function next(){
-  i++;
-  if(i<questions.length)show();
-  else finish();
-}
-
-async function finish(){
-  await fetch("/score",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:user,score:s})});
-  alert("Skor: "+s);
-  loadLB();
-}
-
-async function loadLB(){
-  let r=await fetch("/leaderboard");
-  let d=await r.json();
-  let lb=document.getElementById("lb");
-  lb.innerHTML="";
-  d.forEach(x=>{
-    let li=document.createElement("li");
-    li.innerText=x.username+"-"+x.score;
-    lb.appendChild(li);
-  });
-}
-
-socket.on("players",p=>{
-  let pl=document.getElementById("pl");
-  pl.innerHTML="";
-  p.forEach(x=>{
-    let li=document.createElement("li");
-    li.innerText=x.username;
-    pl.appendChild(li);
-  });
-});
-
-loadQ();
-loadLB();
+updateLives();
+showQuestion();
 </script>
+
 </body>
 </html>
