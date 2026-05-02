@@ -16,14 +16,12 @@ body {
   color: white;
 }
 
-/* CONTAINER */
 .container {
   width: 400px;
   max-width: 90%;
   text-align: center;
 }
 
-/* HEADER */
 .top {
   display: flex;
   justify-content: space-between;
@@ -36,7 +34,6 @@ body {
   border-radius: 10px;
 }
 
-/* CARD SOAL */
 .card {
   background: white;
   color: #333;
@@ -46,7 +43,6 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
-/* JAWABAN */
 .answers {
   margin-top: 20px;
 }
@@ -67,7 +63,6 @@ body {
   transform: scale(1.05);
 }
 
-/* EFEK */
 .correct {
   background: #4caf50 !important;
   color: white;
@@ -84,19 +79,16 @@ body {
 
 <div class="container">
 
-  <!-- HEADER -->
   <div class="top">
     <div class="score">⭐ <span id="score">0</span></div>
     <div class="qnum" id="qnum">1</div>
     <div class="lives" id="lives">❤️❤️❤️</div>
   </div>
 
-  <!-- SOAL -->
   <div class="card">
     <h3 id="question"></h3>
   </div>
 
-  <!-- JAWABAN -->
   <div class="answers" id="answers"></div>
 
 </div>
@@ -104,9 +96,18 @@ body {
 <script src="questions.js"></script>
 
 <script>
+// =====================
+// ✅ LOGIN CHECK (FIX)
+// =====================
 let user = localStorage.getItem("username");
-if (!user) location.href = "login.html";
 
+if (!user) {
+  window.location.href = "menu.html";
+}
+
+// =====================
+// GAME LOGIC
+// =====================
 let index = 0;
 let score = 0;
 let lives = 3;
@@ -150,7 +151,7 @@ function selectAnswer(button, correct) {
   setTimeout(() => {
     if (lives <= 0) {
       alert("💀 Game Over! Skor: " + score);
-      location.reload();
+      location.href = "menu.html";
     } else {
       next();
     }
@@ -162,9 +163,22 @@ function next() {
   if (index < questions.length) {
     showQuestion();
   } else {
-    alert("🎉 Selesai! Skor: " + score);
-    location.reload();
+    finishGame();
   }
+}
+
+async function finishGame() {
+  await fetch("/score", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      username: user,
+      score
+    })
+  });
+
+  alert("🎉 Selesai! Skor: " + score);
+  location.href = "menu.html";
 }
 
 updateLives();
